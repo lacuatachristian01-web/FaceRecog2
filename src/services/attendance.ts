@@ -165,3 +165,51 @@ export async function deleteAttendanceRecord(id: string) {
   if (error) throw error;
   return { success: true };
 }
+export async function checkApproval(roomId: string, studentId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('room_participants')
+    .select('is_approved')
+    .eq('room_id', roomId)
+    .eq('student_id', studentId)
+    .maybeSingle();
+
+  if (error) return false;
+  return data?.is_approved || false;
+}
+export async function getAbsentStudents(roomId: string) {
+  const supabase = await createClient();
+  const today = new Date().toISOString().split('T')[0];
+
+  // 1. Get all participants
+  const { data: participants, error: pError } = await supabase
+    .from('room_participants')
+    .select(`
+      profiles:student_id (
+        id,
+        full_name,
+        student_id,
+        course_year
+      )
+    `)
+    .eq('room_id', roomId)
+    .eq('is_approved', true);
+
+  if (pError) throw pError;
+
+  // 2. Get today's attendance
+  const { data: attendance, error: aError } = await supabase
+    .from('attendance')
+    .select('student_id')
+    .eq('room_id', roomId)
+    .gte('time_in', `${today}T00:00:00`);
+
+  if (aError) throw aError;
+
+  const attendedIds = new Set(attendance.map(a => a.student_id));
+  
+  // 3. Filter absents
+  return (participants as any[])
+    .filter(p => p.profiles && !attendedIds.has(p.profiles.id))
+    .map(p => p.profiles);
+}

@@ -48,12 +48,13 @@ export async function joinRoom(code: string) {
 
   if (roomError || !room) throw new Error('Invalid room code');
 
-  // 2. Join the room
+  // 2. Add student to participants (pending approval)
   const { error: joinError } = await supabase
     .from('room_participants')
     .insert({
       room_id: room.id,
       student_id: user.id,
+      is_approved: false
     });
 
   if (joinError) {
@@ -130,12 +131,25 @@ export async function removeStudentFromRoom(roomId: string, studentId: string) {
   return { success: true };
 }
 
+export async function approveStudent(roomId: string, studentId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('room_participants')
+    .update({ is_approved: true })
+    .eq('room_id', roomId)
+    .eq('student_id', studentId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
 export async function getRoomParticipants(roomId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('room_participants')
     .select(`
       joined_at,
+      is_approved,
       profiles:student_id (
         id,
         full_name,
