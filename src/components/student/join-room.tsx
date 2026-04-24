@@ -47,7 +47,7 @@ export function JoinRoom() {
             <Input
               placeholder="e.g. X8Y2Z9"
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCode(e.target.value.toUpperCase())}
               className="text-center text-2xl font-mono tracking-widest bg-background border-input uppercase"
               maxLength={6}
             />

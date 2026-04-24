@@ -59,7 +59,7 @@ export function RoomList() {
             <Input
               placeholder="Room Name (e.g., BSCS 4A)"
               value={newRoomName}
-              onChange={(e) => setNewRoomName(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRoomName(e.target.value)}
               className="bg-background border-input text-foreground focus-visible:ring-ring"
             />
             <Button type="submit" disabled={creating} className="bg-primary text-primary-foreground hover:bg-primary/90">

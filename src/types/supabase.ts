@@ -24,6 +24,10 @@ export type Database = {
           gender: string | null
           id: string
           role: Database["public"]["Enums"]["user_role"] | null
+          student_id: string | null
+          face_registered: boolean | null
+          face_embedding: Json | null
+          last_room_id: string | null
         }
         Insert: {
           age?: number | null
@@ -34,6 +38,10 @@ export type Database = {
           gender?: string | null
           id: string
           role?: Database["public"]["Enums"]["user_role"] | null
+          student_id?: string | null
+          face_registered?: boolean | null
+          face_embedding?: Json | null
+          last_room_id?: string | null
         }
         Update: {
           age?: number | null
@@ -44,8 +52,120 @@ export type Database = {
           gender?: string | null
           id?: string
           role?: Database["public"]["Enums"]["user_role"] | null
+          student_id?: string | null
+          face_registered?: boolean | null
+          face_embedding?: Json | null
+          last_room_id?: string | null
         }
         Relationships: []
+      }
+      rooms: {
+        Row: {
+          id: string
+          admin_id: string
+          name: string
+          code: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          admin_id: string
+          name: string
+          code: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          admin_id?: string
+          name?: string
+          code?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_admin_id_fkey"
+            columns: ["admin_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      room_participants: {
+        Row: {
+          room_id: string
+          student_id: string
+          joined_at: string
+        }
+        Insert: {
+          room_id: string
+          student_id: string
+          joined_at?: string
+        }
+        Update: {
+          room_id?: string
+          student_id?: string
+          joined_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_participants_room_id_fkey"
+            columns: ["room_id"]
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_participants_student_id_fkey"
+            columns: ["student_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      attendance: {
+        Row: {
+          id: string
+          room_id: string
+          student_id: string
+          time_in: string
+          time_out: string | null
+          events: string[] | null
+          fines: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          student_id: string
+          time_in?: string
+          time_out?: string | null
+          events?: string[] | null
+          fines?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          student_id?: string
+          time_in?: string
+          time_out?: string | null
+          events?: string[] | null
+          fines?: number | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_room_id_fkey"
+            columns: ["room_id"]
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
       }
     }
     Views: {
@@ -55,7 +175,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      user_role: "admin" | "user"
+      user_role: "admin" | "student"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -183,7 +303,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      user_role: ["admin", "user"],
+      user_role: ["admin", "student"],
     },
   },
 } as const
