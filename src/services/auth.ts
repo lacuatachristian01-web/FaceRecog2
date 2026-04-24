@@ -5,37 +5,44 @@ import { createClient } from '@/utils/supabase/client';
  * Strictly contains all business logic and Supabase queries for authentication.
  */
 
-export async function signInWithEmail(email: string, password: string) {
+export async function signInWithID(name: string, id: string) {
   const client = createClient();
+  
+  // Sanitize ID for email: remove non-alphanumeric and use standard domain
+  const sanitizedId = id.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const email = `u${sanitizedId}@student.com`;
   
   const { error: signInError } = await client.auth.signInWithPassword({
     email,
-    password,
+    password: id,
   });
 
   if (signInError) throw signInError;
 
-  // Check if MFA is required
-  const { data: mfaData, error: mfaError } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-
-  if (mfaError) throw mfaError;
-
-  if (mfaData.nextLevel === 'aal2' && mfaData.nextLevel !== mfaData.currentLevel) {
-    return { success: true, requiresMFA: true };
-  }
-
-  return { success: true, requiresMFA: false };
+  return { success: true };
 }
 
-export async function signUpWithEmail(email: string, password: string, role: 'admin' | 'student' = 'student', studentId?: string) {
+export async function signUpWithID(
+  name: string, 
+  id: string, 
+  role: 'admin' | 'student' = 'student', 
+  courseYear?: string
+) {
   const client = createClient();
+  
+  // Sanitize ID for email: remove non-alphanumeric and use standard domain
+  const sanitizedId = id.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const email = `u${sanitizedId}@student.com`;
+
   const { data, error } = await client.auth.signUp({
     email,
-    password,
+    password: id,
     options: {
       data: {
         role,
-        student_id: studentId,
+        full_name: name,
+        student_id: id,
+        course_year: courseYear,
       }
     }
   });

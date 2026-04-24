@@ -137,3 +137,31 @@ export async function getStudentAttendance(studentId: string) {
   if (error) throw error;
   return data;
 }
+export async function getTodayStatus(roomId: string, studentId: string) {
+  const supabase = await createClient();
+  const today = new Date().toISOString().split('T')[0];
+  
+  const { data, error } = await supabase
+    .from('attendance')
+    .select('*')
+    .eq('room_id', roomId)
+    .eq('student_id', studentId)
+    .gte('time_in', `${today}T00:00:00`)
+    .order('time_in', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteAttendanceRecord(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('attendance')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+  return { success: true };
+}

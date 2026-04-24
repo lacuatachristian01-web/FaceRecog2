@@ -94,3 +94,57 @@ export async function getStudentRooms() {
   if (error) throw error;
   return data.map(d => d.rooms) || [];
 }
+export async function deleteRoom(roomId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('rooms')
+    .delete()
+    .eq('id', roomId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function updateRoom(roomId: string, updates: Partial<Room>) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('rooms')
+    .update(updates)
+    .eq('id', roomId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function removeStudentFromRoom(roomId: string, studentId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('room_participants')
+    .delete()
+    .eq('room_id', roomId)
+    .eq('student_id', studentId);
+
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function getRoomParticipants(roomId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('room_participants')
+    .select(`
+      joined_at,
+      profiles:student_id (
+        id,
+        full_name,
+        student_id,
+        course_year
+      )
+    `)
+    .eq('room_id', roomId);
+
+  if (error) throw error;
+  return data;
+}
