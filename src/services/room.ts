@@ -10,7 +10,7 @@ export type Room = Database['public']['Tables']['rooms']['Row'];
  * Handles room creation, joining, and listing.
  */
 
-export async function createRoom(name: string) {
+export async function createRoom(name: string, startTime?: string, endTime?: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -24,6 +24,8 @@ export async function createRoom(name: string) {
       name,
       code,
       admin_id: user.id,
+      start_time: startTime,
+      end_time: endTime
     })
     .select()
     .single();

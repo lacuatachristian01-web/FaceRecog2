@@ -27,12 +27,35 @@ export async function timeIn(roomId: string, studentId: string) {
 
   if (existing) throw new Error('Already timed in');
 
+  // 2. Get room start time
+  const { data: room } = await supabase
+    .from('rooms')
+    .select('start_time')
+    .eq('id', roomId)
+    .single();
+
+  const events: string[] = [];
+  if (room?.start_time) {
+    const now = new Date();
+    const [hours, minutes] = room.start_time.split(':').map(Number);
+    const scheduledTime = new Date();
+    scheduledTime.setHours(hours, minutes, 0, 0);
+
+    if (now > scheduledTime) {
+      events.push('Late');
+    }
+  }
+
+  const fine = events.includes('Late') ? 50 : 0;
+
   const { data, error } = await supabase
     .from('attendance')
     .insert({
       room_id: roomId,
       student_id: studentId,
       time_in: new Date().toISOString(),
+      events: events.length > 0 ? events : null,
+      fines: fine
     })
     .select()
     .single();
