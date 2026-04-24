@@ -66,6 +66,8 @@ export type Database = {
           name: string
           code: string
           created_at: string
+          start_time: string | null
+          end_time: string | null
         }
         Insert: {
           id?: string
@@ -73,6 +75,8 @@ export type Database = {
           name: string
           code: string
           created_at?: string
+          start_time?: string | null
+          end_time?: string | null
         }
         Update: {
           id?: string
@@ -80,6 +84,8 @@ export type Database = {
           name?: string
           code?: string
           created_at?: string
+          start_time?: string | null
+          end_time?: string | null
         }
         Relationships: [
           {
