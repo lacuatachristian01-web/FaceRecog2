@@ -19,11 +19,13 @@ import {
   ClipboardList,
   ScanFace,
   LogIn,
-  UserCheck
+  UserCheck,
+  Users
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { PillTabs } from "@/components/ui/pill-tabs"
 import { siteConfig } from "@/lib/config"
 import { ProfileForm } from "./profile-form"
 import { useInfiniteQuery } from "@tanstack/react-query"
@@ -41,6 +43,7 @@ import { getStudentAttendance } from "@/services/attendance"
 
 import { AttendanceLogs } from "./admin/attendance-logs"
 import { StudentAttendanceHistory } from "./student/attendance-history"
+import { StudentRegistry } from "./admin/student-registry"
 
 const REPOS_PER_PAGE = 5;
 
@@ -127,7 +130,8 @@ interface DashboardShellProps {
 export function DashboardShell({ profiles, user, profile, repos }: DashboardShellProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const initialTab = searchParams.get("tab") || "overview"
+  const defaultTab = profile?.role === 'admin' ? "rooms" : "terminal"
+  const initialTab = searchParams.get("tab") || defaultTab
   const [activeTab, setActiveTabLocal] = React.useState(initialTab)
 
   const setActiveTab = (tab: string) => {
@@ -155,19 +159,15 @@ export function DashboardShell({ profiles, user, profile, repos }: DashboardShel
 
   const DASHBOARD_TABS = profile?.role === 'admin' 
     ? [
-        { id: "overview", label: "Overview", icon: Activity },
         { id: "rooms", label: "Manage Rooms", icon: DoorOpen },
         { id: "logs", label: "Attendance Logs", icon: ClipboardList },
-        { id: "security", label: "Security", icon: ShieldCheck },
+        { id: "registry", label: "Student Registry", icon: Users },
         { id: "settings", label: "Settings", icon: Settings },
       ]
     : [
-        { id: "overview", label: "Overview", icon: Activity },
-        { id: "terminal", label: "Attendance", icon: ScanFace },
+        { id: "terminal", label: "Attendance Terminal", icon: ScanFace },
         { id: "join", label: "Join Room", icon: LogIn },
         { id: "status", label: "My Status", icon: UserCheck },
-        { id: "security", label: "Security", icon: ShieldCheck },
-        { id: "settings", label: "Settings", icon: Settings },
       ]
 
   return (
@@ -266,6 +266,17 @@ export function DashboardShell({ profiles, user, profile, repos }: DashboardShel
             <p className="text-sm text-muted-foreground">View real-time attendance for your rooms.</p>
           </div>
           <AttendanceLogs roomId={profile?.last_room_id || ""} />
+        </TabsContent>
+      )}
+
+      {/* Admin: Student Registry Tab */}
+      {profile?.role === 'admin' && (
+        <TabsContent value="registry" className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-2xl font-semibold text-foreground">Student Registry</h2>
+            <p className="text-sm text-muted-foreground">Manage student profiles, IDs, and facial registrations.</p>
+          </div>
+          <StudentRegistry />
         </TabsContent>
       )}
 

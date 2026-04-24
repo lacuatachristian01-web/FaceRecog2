@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createRoom, getAdminRooms, Room } from "@/services/room";
+import { createRoom, deleteRoom, getAdminRooms, Room, removeStudentFromRoom, getRoomParticipants } from "@/services/room";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Users, Hash, Calendar, Clock } from "lucide-react";
+import { Plus, Users, Hash, Calendar, Clock, Trash2, UserMinus, ChevronRight, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export function RoomList() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -15,6 +16,8 @@ export function RoomList() {
   const [endTime, setEndTime] = useState("17:00");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<any[]>([]);
 
   useEffect(() => {
     fetchRooms();
@@ -45,6 +48,38 @@ export function RoomList() {
       toast.error(error.message || "Failed to create room");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!confirm("Are you sure you want to delete this room? All attendance records will be lost.")) return;
+    try {
+      await deleteRoom(roomId);
+      toast.success("Room deleted");
+      fetchRooms();
+    } catch (error: any) {
+      toast.error("Failed to delete room");
+    }
+  };
+
+  const handleViewParticipants = async (roomId: string) => {
+    setSelectedRoom(roomId);
+    try {
+      const data = await getRoomParticipants(roomId);
+      setParticipants(data);
+    } catch (error: any) {
+      toast.error("Failed to load students");
+    }
+  };
+
+  const handleRemoveStudent = async (roomId: string, studentId: string) => {
+    if (!confirm("Remove this student from the room?")) return;
+    try {
+      await removeStudentFromRoom(roomId, studentId);
+      toast.success("Student removed");
+      handleViewParticipants(roomId);
+    } catch (error: any) {
+      toast.error("Failed to remove student");
     }
   };
 
@@ -102,38 +137,93 @@ export function RoomList() {
           </div>
         ) : (
           rooms.map((room) => (
-            <Card key={room.id} className="border-border bg-card hover:border-primary/50 transition-colors">
-              <CardHeader>
-                <CardTitle className="text-foreground flex items-center justify-between">
-                  {room.name}
-                  <div className="text-xs font-mono bg-muted text-muted-foreground px-2 py-1 rounded">
+            <Card key={room.id} className="border-border bg-card hover:border-primary/50 transition-colors group relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDeleteRoom(room.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-xl font-bold text-foreground">{room.name}</CardTitle>
+                  <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-tighter">
                     {room.code}
-                  </div>
-                </CardTitle>
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Hash className="h-4 w-4" />
-                  Code: <span className="font-bold text-foreground">{room.code}</span>
+              <CardContent className="space-y-3 pb-4">
+                <div className="flex items-center text-sm text-muted-foreground gap-2">
+                  <Clock className="h-4 w-4 text-primary/70" />
+                  <span>{room.start_time} - {room.end_time}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Schedule: <span className="font-bold text-foreground">{room.start_time?.slice(0, 5)} - {room.end_time?.slice(0, 5)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Created: {new Date(room.created_at).toLocaleDateString()}
+                <div className="flex items-center text-sm text-muted-foreground gap-2">
+                  <Users className="h-4 w-4 text-primary/70" />
+                  <span>Active Session</span>
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button variant="outline" className="w-full border-border hover:bg-accent hover:text-accent-foreground" onClick={() => window.location.href = `/admin/rooms/${room.id}`}>
-                  View Dashboard
+              <CardFooter className="pt-0">
+                <Button 
+                  variant="secondary" 
+                  className="w-full text-xs font-semibold"
+                  onClick={() => handleViewParticipants(room.id)}
+                >
+                  <Users className="mr-2 h-3 w-3" />
+                  Manage Students
                 </Button>
               </CardFooter>
             </Card>
           ))
         )}
       </div>
+
+      {/* Participant Management Modal/Overlay */}
+      {selectedRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <Card className="w-full max-w-lg border-border bg-card shadow-2xl">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-border pb-4">
+              <div>
+                <CardTitle>Room Students</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">Manage who can attend this session.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setSelectedRoom(null)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0 max-h-[60vh] overflow-y-auto">
+              {participants.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">No students joined yet.</div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {participants.map((p) => (
+                    <div key={p.profiles.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-sm">{p.profiles.full_name}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{p.profiles.student_id} • {p.profiles.course_year}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveStudent(selectedRoom, p.profiles.id)}
+                      >
+                        <UserMinus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="border-t border-border pt-4">
+              <Button variant="outline" className="w-full" onClick={() => setSelectedRoom(null)}>Close</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAdminDashboard, AttendanceRecord } from "@/services/attendance";
+import { getAdminDashboard, AttendanceRecord, deleteAttendanceRecord } from "@/services/attendance";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ClipboardList, Clock, User, AlertCircle } from "lucide-react";
+import { ClipboardList, Clock, User, AlertCircle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface AttendanceLogsProps {
   roomId: string;
@@ -31,6 +32,17 @@ export function AttendanceLogs({ roomId }: AttendanceLogsProps) {
       toast.error("Failed to fetch attendance logs");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!confirm("Delete this attendance record?")) return;
+    try {
+      await deleteAttendanceRecord(id);
+      toast.success("Log deleted");
+      fetchLogs();
+    } catch (error: any) {
+      toast.error("Failed to delete log");
     }
   };
 
@@ -80,16 +92,18 @@ export function AttendanceLogs({ roomId }: AttendanceLogsProps) {
               <TableRow className="border-b border-border bg-muted/50">
                 <TableHead className="font-mono text-[10px] uppercase tracking-widest">Student</TableHead>
                 <TableHead className="font-mono text-[10px] uppercase tracking-widest">Student ID</TableHead>
+                <TableHead className="font-mono text-[10px] uppercase tracking-widest">Course/Year</TableHead>
                 <TableHead className="font-mono text-[10px] uppercase tracking-widest">Time In</TableHead>
                 <TableHead className="font-mono text-[10px] uppercase tracking-widest">Time Out</TableHead>
                 <TableHead className="font-mono text-[10px] uppercase tracking-widest">Fines</TableHead>
                 <TableHead className="font-mono text-[10px] uppercase tracking-widest">Status</TableHead>
+                <TableHead className="font-mono text-[10px] uppercase tracking-widest text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {logs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground italic">
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground italic">
                     No attendance records found for this room.
                   </TableCell>
                 </TableRow>
@@ -103,6 +117,7 @@ export function AttendanceLogs({ roomId }: AttendanceLogsProps) {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{log.profiles?.student_id || "N/A"}</TableCell>
+                    <TableCell className="text-xs">{log.profiles?.course_year || "N/A"}</TableCell>
                     <TableCell className="text-xs">
                       {new Date(log.time_in).toLocaleTimeString()}
                     </TableCell>
@@ -135,6 +150,16 @@ export function AttendanceLogs({ roomId }: AttendanceLogsProps) {
                           </Badge>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteLog(log.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

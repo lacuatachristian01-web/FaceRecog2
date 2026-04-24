@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Camera, Loader2, CheckCircle2, Clock, UserCheck } from "lucide-react";
-import { timeIn, timeOut } from "@/services/attendance";
+import { timeIn, timeOut, getTodayStatus } from "@/services/attendance";
 import { getFaceEmbedding } from "@/services/face";
+import { Badge } from "@/components/ui/badge";
 
 interface AttendanceTerminalProps {
   roomId: string;
@@ -22,6 +23,22 @@ export function AttendanceTerminal({ roomId, userId, userName }: AttendanceTermi
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [actionMessage, setActionMessage] = useState("");
+  const [todayStatus, setTodayStatus] = useState<any>(null);
+
+  useEffect(() => {
+    if (roomId && userId) {
+      fetchStatus();
+    }
+  }, [roomId, userId]);
+
+  const fetchStatus = async () => {
+    try {
+      const status = await getTodayStatus(roomId, userId);
+      setTodayStatus(status);
+    } catch (err) {
+      console.error("Failed to fetch status", err);
+    }
+  };
 
   useEffect(() => {
     const loadModels = async () => {
@@ -97,6 +114,7 @@ export function AttendanceTerminal({ roomId, userId, userName }: AttendanceTermi
 
       setStatus('success');
       toast.success(type === 'in' ? "Time In recorded" : "Time Out recorded");
+      fetchStatus();
 
       // Stop camera after success
       setTimeout(() => {
@@ -122,9 +140,17 @@ export function AttendanceTerminal({ roomId, userId, userName }: AttendanceTermi
     <div className="max-w-3xl mx-auto space-y-6">
       <Card className="border-border bg-card overflow-hidden">
         <CardHeader className="bg-muted/30 border-b border-border">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <UserCheck className="h-5 w-5 text-primary" />
-            Attendance Terminal
+          <CardTitle className="text-xl flex items-center justify-between w-full">
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-primary" />
+              Attendance Terminal
+            </div>
+            {todayStatus && (
+              <Badge variant={todayStatus.time_out ? "secondary" : "default"} className={todayStatus.time_out ? "" : "bg-green-500 hover:bg-green-600"}>
+                {todayStatus.time_out ? "Status: Session Ended" : "Status: Timed In"}
+              </Badge>
+            )}
+            {!todayStatus && <Badge variant="outline">Status: Not Timed In</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -171,25 +197,32 @@ export function AttendanceTerminal({ roomId, userId, userName }: AttendanceTermi
         <CardFooter className="flex justify-center gap-4 p-6 border-t border-border">
           {isStreaming && status !== 'success' && (
             <>
-              <Button 
-                onClick={() => processAttendance('in')} 
-                disabled={isProcessing}
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 flex-1 h-16 text-lg"
-              >
-                <Clock className="mr-2 h-6 w-6" />
-                Time In
-              </Button>
-              <Button 
-                onClick={() => processAttendance('out')} 
-                disabled={isProcessing}
-                variant="outline"
-                size="lg"
-                className="border-border hover:bg-accent text-accent-foreground flex-1 h-16 text-lg"
-              >
-                <Clock className="mr-2 h-6 w-6" />
-                Time Out
-              </Button>
+              {(!todayStatus) && (
+                <Button 
+                  onClick={() => processAttendance('in')} 
+                  disabled={isProcessing}
+                  size="lg"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 flex-1 h-16 text-lg"
+                >
+                  <Clock className="mr-2 h-6 w-6" />
+                  Time In
+                </Button>
+              )}
+              {(todayStatus && !todayStatus.time_out) && (
+                <Button 
+                  onClick={() => processAttendance('out')} 
+                  disabled={isProcessing}
+                  variant="outline"
+                  size="lg"
+                  className="border-border hover:bg-accent text-accent-foreground flex-1 h-16 text-lg"
+                >
+                  <Clock className="mr-2 h-6 w-6" />
+                  Time Out
+                </Button>
+              )}
+              {todayStatus?.time_out && (
+                <div className="text-sm text-muted-foreground italic">You have completed your attendance for today.</div>
+              )}
             </>
           )}
         </CardFooter>

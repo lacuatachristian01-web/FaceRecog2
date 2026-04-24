@@ -1,23 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signInWithEmail, signUpWithEmail } from '@/services/auth';
+import { signInWithID, signUpWithID } from '@/services/auth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Loader2, Check } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Loader2, Check, Hash, GraduationCap, Briefcase } from 'lucide-react';
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [formKey, setFormKey] = useState(0);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [id, setId] = useState('');
+  const [courseYear, setCourseYear] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [windowWidth, setWindowWidth] = useState(1024);
+  const [userRole, setUserRole] = useState<'admin' | 'student'>('student');
   const router = useRouter();
 
   useEffect(() => {
@@ -35,8 +35,8 @@ export default function AuthPage() {
     setFormKey(k => k + 1);
     setError('');
     setSuccess(false);
-    setEmail('');
-    setPassword('');
+    setId('');
+    setCourseYear('');
     setName('');
   };
 
@@ -47,22 +47,18 @@ export default function AuthPage() {
 
     try {
       if (mode === 'login') {
-        const result = await signInWithEmail(email, password);
-        if (result.requiresMFA) {
-          router.push('/auth/mfa');
-        } else {
-          setSuccess(true);
-          setTimeout(() => {
-            toast.success('Login successful!');
-            router.push('/dashboard');
-            router.refresh();
-          }, 800);
-        }
-      } else {
-        await signUpWithEmail(email, password);
+        await signInWithID(name, id);
         setSuccess(true);
         setTimeout(() => {
-          toast.success('Account created!', { description: 'Check your email for confirmation.' });
+          toast.success('Login successful!');
+          router.push('/dashboard');
+          router.refresh();
+        }, 800);
+      } else {
+        await signUpWithID(name, id, userRole, courseYear);
+        setSuccess(true);
+        setTimeout(() => {
+          toast.success('Account created!', { description: 'You can now sign in with your ID.' });
         }, 800);
       }
     } catch (err: any) {
@@ -73,14 +69,6 @@ export default function AuthPage() {
   };
 
   const isDesktop = windowWidth >= 900;
-  const passwordScore = (() => {
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-    return score;
-  })();
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0F', color: '#F0EEFF', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
@@ -325,12 +313,12 @@ export default function AuthPage() {
 
             {/* Heading */}
             <div style={{ marginBottom: 24 }}>
-              <h2 style={{ fontSize: 26, fontWeight: 'bold', letterSpacing: -0.025, marginBottom: 5, color: '#F0EEFF' }}>
-                {mode === 'login' ? 'Welcome back' : 'Start building'}
-              </h2>
-              <p style={{ fontSize: 13, color: '#9490B5', lineHeight: 1.55 }}>
-                {mode === 'login' ? 'Access Mission Control — your launchpad awaits.' : 'Create your account and ship your first idea today.'}
-              </p>
+                <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: -0.5, color: '#F0EEFF', margin: 0 }}>
+                  Attendance System
+                </h1>
+                <p style={{ fontSize: 15, color: '#9490B5', margin: 0, lineHeight: 1.5 }}>
+                  Facial Recognition Attendance for Modern Classrooms
+                </p>
             </div>
 
             {/* Success State */}
@@ -353,49 +341,73 @@ export default function AuthPage() {
               </div>
             ) : (
               <form key={formKey} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                
                 {mode === 'signup' && (
                   <div style={{ animation: 'slideIn 0.25s ease both' }}>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: 0.08, textTransform: 'uppercase', color: '#9490B5', marginBottom: 6 }}>
-                      Full name
+                      Register as...
                     </label>
-                    <div style={{ position: 'relative' }}>
-                      <User size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#9490B5', pointerEvents: 'none' }} />
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="Dann Lopez"
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button
+                        type="button"
+                        onClick={() => setUserRole('student')}
                         style={{
-                          width: '100%',
-                          paddingLeft: 40,
-                          paddingRight: 14,
-                          paddingTop: 12,
-                          paddingBottom: 12,
-                          background: 'rgba(19,19,31,0.8)',
-                          border: '1px solid #2E2A4A',
-                          borderRadius: 9,
-                          color: '#F0EEFF',
-                          fontSize: 14,
-                          outline: 'none',
-                          transition: 'all 0.18s',
-                          boxSizing: 'border-box',
+                          flex: 1,
+                          padding: '12px',
+                          background: userRole === 'student' ? 'rgba(108,71,255,0.15)' : 'rgba(19,19,31,0.8)',
+                          border: `1px solid ${userRole === 'student' ? '#6C47FF' : '#2E2A4A'}`,
+                          borderRadius: 12,
+                          color: userRole === 'student' ? '#F0EEFF' : '#9490B5',
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          transition: 'all 0.2s'
                         }}
-                      />
+                      >
+                        <GraduationCap size={16} />
+                        Student
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUserRole('admin')}
+                        style={{
+                          flex: 1,
+                          padding: '12px',
+                          background: userRole === 'admin' ? 'rgba(108,71,255,0.15)' : 'rgba(19,19,31,0.8)',
+                          border: `1px solid ${userRole === 'admin' ? '#6C47FF' : '#2E2A4A'}`,
+                          borderRadius: 12,
+                          color: userRole === 'admin' ? '#F0EEFF' : '#9490B5',
+                          fontSize: 13,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <Briefcase size={16} />
+                        Admin
+                      </button>
                     </div>
                   </div>
                 )}
 
-                <div>
+                {/* Full Name - Required for both */}
+                <div style={{ animation: 'slideIn 0.25s ease both' }}>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: 0.08, textTransform: 'uppercase', color: '#9490B5', marginBottom: 6 }}>
-                    Email address
+                    Full Name
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <Mail size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#9490B5', pointerEvents: 'none' }} />
+                    <User size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#9490B5', pointerEvents: 'none' }} />
                     <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder="dann@example.com"
+                      type="text"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      placeholder="Juan Dela Cruz"
                       required
                       style={{
                         width: '100%',
@@ -416,22 +428,23 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                <div>
+                {/* Identification (ID) - Required for both */}
+                <div style={{ animation: 'slideIn 0.25s ease both' }}>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: 0.08, textTransform: 'uppercase', color: '#9490B5', marginBottom: 6 }}>
-                    Password
+                    Identification (ID)
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <Lock size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#9490B5', pointerEvents: 'none' }} />
+                    <Hash size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#9490B5', pointerEvents: 'none' }} />
                     <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      placeholder={mode === 'login' ? '••••••••' : 'Min. 8 characters'}
+                      type="text"
+                      value={id}
+                      onChange={e => setId(e.target.value)}
+                      placeholder="e.g. 231-0726"
                       required
                       style={{
                         width: '100%',
                         paddingLeft: 40,
-                        paddingRight: 40,
+                        paddingRight: 14,
                         paddingTop: 12,
                         paddingBottom: 12,
                         background: 'rgba(19,19,31,0.8)',
@@ -444,55 +457,40 @@ export default function AuthPage() {
                         boxSizing: 'border-box',
                       }}
                     />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: 12,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#9490B5',
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
                   </div>
-
-                  {mode === 'signup' && password && (
-                    <div style={{ marginTop: 7 }}>
-                      <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-                        {[0, 1, 2, 3].map(i => {
-                          const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e'];
-                          return (
-                            <div key={i} style={{
-                              flex: 1,
-                              height: 3,
-                              borderRadius: 2,
-                              background: i < passwordScore ? colors[passwordScore - 1] : '#2E2A4A',
-                              transition: 'background 0.25s',
-                            }} />
-                          );
-                        })}
-                      </div>
-                      <p style={{ fontSize: 10, color: passwordScore > 0 ? ['#ef4444', '#f97316', '#eab308', '#22c55e'][passwordScore - 1] : '#9490B5' }}>
-                        {passwordScore > 0 ? ['Weak', 'Fair', 'Good', 'Strong'][passwordScore - 1] : ''}
-                      </p>
-                    </div>
-                  )}
                 </div>
 
-                {mode === 'login' && (
-                  <div style={{ textAlign: 'right', marginTop: -4 }}>
-                    <Link href="/forgot-password" style={{ fontSize: 11, color: '#9490B5', textDecoration: 'none', letterSpacing: 0.05, transition: 'color 0.2s', cursor: 'pointer' }} onMouseEnter={e => (e.currentTarget as any).style.color = '#6C47FF'} onMouseLeave={e => (e.currentTarget as any).style.color = '#9490B5'}>
-                      FORGOT PASSWORD?
-                    </Link>
+                {/* Course & Year - Signup Only (Student only) */}
+                {mode === 'signup' && userRole === 'student' && (
+                  <div style={{ animation: 'slideIn 0.25s ease both' }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: 0.08, textTransform: 'uppercase', color: '#9490B5', marginBottom: 6 }}>
+                      Course & Year
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <GraduationCap size={15} style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#9490B5', pointerEvents: 'none' }} />
+                      <input
+                        type="text"
+                        value={courseYear}
+                        onChange={e => setCourseYear(e.target.value)}
+                        placeholder="BSCS 4A"
+                        required
+                        style={{
+                          width: '100%',
+                          paddingLeft: 40,
+                          paddingRight: 14,
+                          paddingTop: 12,
+                          paddingBottom: 12,
+                          background: 'rgba(19,19,31,0.8)',
+                          border: '1px solid #2E2A4A',
+                          borderRadius: 9,
+                          color: '#F0EEFF',
+                          fontSize: 14,
+                          outline: 'none',
+                          transition: 'all 0.18s',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -504,6 +502,7 @@ export default function AuthPage() {
                     border: '1px solid rgba(239,68,68,0.22)',
                     fontSize: 12,
                     color: '#f87171',
+                    animation: 'fadeUp 0.3s ease both'
                   }}>
                     {error}
                   </div>
@@ -599,7 +598,7 @@ export default function AuthPage() {
         background: 'rgba(10,10,15,0.75)',
         backdropFilter: 'blur(10px)',
       }}>
-        <span style={{ fontSize: 11, color: '#5A5680' }}>© 2026 DannFlow</span>
+        <span style={{ fontSize: 11, color: '#5A5680' }}>© 2026 Attendance System</span>
         <div style={{ display: 'flex', gap: 18 }}>
           {['Privacy', 'Terms', 'Docs'].map(l => (
             <Link key={l} href="#" style={{ fontSize: 11, color: '#5A5680', textDecoration: 'none', transition: 'color 0.2s', cursor: 'pointer' }} onMouseEnter={e => (e.currentTarget as any).style.color = '#6C47FF'} onMouseLeave={e => (e.currentTarget as any).style.color = '#5A5680'}>{l}</Link>
