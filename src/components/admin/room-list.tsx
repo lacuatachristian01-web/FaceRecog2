@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Users, Hash, Calendar } from "lucide-react";
+import { Plus, Users, Hash, Calendar, Clock } from "lucide-react";
 
 export function RoomList() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [newRoomName, setNewRoomName] = useState("");
+  const [startTime, setStartTime] = useState("08:00");
+  const [endTime, setEndTime] = useState("17:00");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
 
@@ -35,7 +37,7 @@ export function RoomList() {
 
     setCreating(true);
     try {
-      await createRoom(newRoomName);
+      await createRoom(newRoomName, startTime, endTime);
       setNewRoomName("");
       toast.success("Room created successfully");
       fetchRooms();
@@ -55,16 +57,39 @@ export function RoomList() {
           <CardTitle className="text-foreground">Create New Room</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleCreateRoom} className="flex gap-4">
-            <Input
-              placeholder="Room Name (e.g., BSCS 4A)"
-              value={newRoomName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRoomName(e.target.value)}
-              className="bg-background border-input text-foreground focus-visible:ring-ring"
-            />
-            <Button type="submit" disabled={creating} className="bg-primary text-primary-foreground hover:bg-primary/90">
+          <form onSubmit={handleCreateRoom} className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 space-y-2">
+                <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Room Name</label>
+                <Input
+                  placeholder="e.g., BSCS 4A"
+                  value={newRoomName}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewRoomName(e.target.value)}
+                  className="bg-background border-input text-foreground"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Start Time</label>
+                <Input
+                  type="time"
+                  value={startTime}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartTime(e.target.value)}
+                  className="bg-background border-input text-foreground"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">End Time</label>
+                <Input
+                  type="time"
+                  value={endTime}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndTime(e.target.value)}
+                  className="bg-background border-input text-foreground"
+                />
+              </div>
+            </div>
+            <Button type="submit" disabled={creating} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="mr-2 h-4 w-4" />
-              {creating ? "Creating..." : "Create"}
+              {creating ? "Creating..." : "Create Room Session"}
             </Button>
           </form>
         </CardContent>
@@ -90,6 +115,10 @@ export function RoomList() {
                 <div className="flex items-center gap-2">
                   <Hash className="h-4 w-4" />
                   Code: <span className="font-bold text-foreground">{room.code}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Schedule: <span className="font-bold text-foreground">{room.start_time?.slice(0, 5)} - {room.end_time?.slice(0, 5)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />

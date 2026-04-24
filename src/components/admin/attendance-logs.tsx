@@ -115,15 +115,26 @@ export function AttendanceLogs({ roomId }: AttendanceLogsProps) {
                       </span>
                     </TableCell>
                     <TableCell>
-                      {!log.time_out ? (
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
-                          Completed
-                        </Badge>
-                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {log.events?.map((event: string) => (
+                          <Badge 
+                            key={event} 
+                            variant="outline" 
+                            className={event === 'Late' ? "bg-destructive/10 text-destructive border-destructive/20" : ""}
+                          >
+                            {event}
+                          </Badge>
+                        ))}
+                        {!log.time_out ? (
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
+                            Completed
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
