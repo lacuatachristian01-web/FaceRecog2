@@ -27,14 +27,20 @@ export async function signInWithEmail(email: string, password: string) {
   return { success: true, requiresMFA: false };
 }
 
-export async function signUpWithEmail(email: string, password: string) {
+export async function signUpWithEmail(email: string, password: string, role: 'admin' | 'student' = 'student', studentId?: string) {
   const client = createClient();
-  const { error } = await client.auth.signUp({
+  const { data, error } = await client.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        role,
+        student_id: studentId,
+      }
+    }
   });
   if (error) throw error;
-  return { success: true };
+  return { success: true, user: data.user };
 }
 
 export async function signOut() {
