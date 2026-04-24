@@ -130,7 +130,7 @@ interface DashboardShellProps {
 export function DashboardShell({ profiles, user, profile, repos }: DashboardShellProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const defaultTab = profile?.role === 'admin' ? "rooms" : "terminal"
+  const defaultTab = profile?.role === 'admin' ? "registry" : "terminal"
   const initialTab = searchParams.get("tab") || defaultTab
   const [activeTab, setActiveTabLocal] = React.useState(initialTab)
 
@@ -159,15 +159,12 @@ export function DashboardShell({ profiles, user, profile, repos }: DashboardShel
 
   const DASHBOARD_TABS = profile?.role === 'admin' 
     ? [
-        { id: "rooms", label: "Manage Rooms", icon: DoorOpen },
-        { id: "logs", label: "Attendance Logs", icon: ClipboardList },
-        { id: "registry", label: "Student Registry", icon: Users },
+        { id: "registry", label: "Student Users", icon: Users },
+        { id: "logs", label: "Attendance & Fines", icon: ClipboardList },
         { id: "settings", label: "Settings", icon: Settings },
       ]
     : [
         { id: "terminal", label: "Attendance Terminal", icon: ScanFace },
-        { id: "join", label: "Join Room", icon: LogIn },
-        { id: "status", label: "My Status", icon: UserCheck },
       ]
 
   return (
@@ -247,16 +244,6 @@ export function DashboardShell({ profiles, user, profile, repos }: DashboardShel
       </TabsContent>
 
 
-      {/* Admin: Rooms Tab */}
-      {profile?.role === 'admin' && (
-        <TabsContent value="rooms" className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-semibold text-foreground">Room Management</h2>
-            <p className="text-sm text-muted-foreground">Create and manage your attendance sessions.</p>
-          </div>
-          <RoomList />
-        </TabsContent>
-      )}
 
       {/* Admin: Logs Tab */}
       {profile?.role === 'admin' && (

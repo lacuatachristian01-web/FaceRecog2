@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createRoom, deleteRoom, getAdminRooms, Room, removeStudentFromRoom, getRoomParticipants } from "@/services/room";
+import { createRoom, deleteRoom, getAdminRooms, Room, removeStudentFromRoom, getRoomParticipants, approveStudent } from "@/services/room";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Users, Hash, Calendar, Clock, Trash2, UserMinus, ChevronRight, X } from "lucide-react";
+import { Plus, Users, Hash, Calendar, Clock, Trash2, UserMinus, ChevronRight, X, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export function RoomList() {
@@ -80,6 +80,16 @@ export function RoomList() {
       handleViewParticipants(roomId);
     } catch (error: any) {
       toast.error("Failed to remove student");
+    }
+  };
+
+  const handleApproveStudent = async (roomId: string, studentId: string) => {
+    try {
+      await approveStudent(roomId, studentId);
+      toast.success("Student approved");
+      handleViewParticipants(roomId);
+    } catch (error: any) {
+      toast.error("Failed to approve student");
     }
   };
 
@@ -202,17 +212,38 @@ export function RoomList() {
                   {participants.map((p) => (
                     <div key={p.profiles.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-sm">{p.profiles.full_name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm">{p.profiles.full_name}</span>
+                          {!p.is_approved && (
+                            <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 text-[9px] h-4">
+                              Pending Approval
+                            </Badge>
+                          )}
+                        </div>
                         <span className="text-xs text-muted-foreground font-mono">{p.profiles.student_id} • {p.profiles.course_year}</span>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => handleRemoveStudent(selectedRoom, p.profiles.id)}
-                      >
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {!p.is_approved && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-green-500 hover:text-green-600 hover:bg-green-500/10"
+                            onClick={() => handleApproveStudent(selectedRoom, p.profiles.id)}
+                            title="Approve Student"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveStudent(selectedRoom, p.profiles.id)}
+                          title="Remove Student"
+                        >
+                          <UserMinus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

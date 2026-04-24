@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Camera, Loader2, CheckCircle2, Clock, UserCheck } from "lucide-react";
-import { timeIn, timeOut, getTodayStatus } from "@/services/attendance";
+import { timeIn, timeOut, getTodayStatus, checkApproval } from "@/services/attendance";
 import { getFaceEmbedding } from "@/services/face";
 import { Badge } from "@/components/ui/badge";
+import { AlertCircle, LogIn } from "lucide-react";
+import { JoinRoom } from "../student/join-room";
 
 interface AttendanceTerminalProps {
   roomId: string;
@@ -24,12 +26,19 @@ export function AttendanceTerminal({ roomId, userId, userName }: AttendanceTermi
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [actionMessage, setActionMessage] = useState("");
   const [todayStatus, setTodayStatus] = useState<any>(null);
+  const [isApproved, setIsApproved] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (roomId && userId) {
       fetchStatus();
+      checkUserApproval();
     }
   }, [roomId, userId]);
+
+  const checkUserApproval = async () => {
+    const approved = await checkApproval(roomId, userId);
+    setIsApproved(approved);
+  };
 
   const fetchStatus = async () => {
     try {
@@ -136,6 +145,25 @@ export function AttendanceTerminal({ roomId, userId, userName }: AttendanceTermi
     setIsStreaming(false);
   };
 
+  if (!roomId) {
+    return (
+      <div className="max-w-md mx-auto space-y-6">
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <LogIn className="h-5 w-5 text-primary" />
+              Join a Room First
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-6">You need to join a session room using a 6-character code before you can take attendance.</p>
+            <JoinRoom />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <Card className="border-border bg-card overflow-hidden">
@@ -168,9 +196,20 @@ export function AttendanceTerminal({ roomId, userId, userName }: AttendanceTermi
                 <div className="bg-muted w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Camera className="h-10 w-10 text-muted-foreground" />
                 </div>
-                <Button onClick={startTerminal} disabled={!isModelLoaded} className="bg-primary">
-                  {isModelLoaded ? "Activate Terminal" : "Loading Models..."}
-                </Button>
+                
+                {isApproved === false ? (
+                  <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-xl max-w-sm mx-auto mb-4">
+                    <div className="flex items-center gap-2 text-destructive mb-1 justify-center">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-bold text-sm uppercase">Approval Pending</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">The admin has not yet approved your request to join this room. Please wait for approval before taking attendance.</p>
+                  </div>
+                ) : (
+                  <Button onClick={startTerminal} disabled={!isModelLoaded} className="bg-primary">
+                    {isModelLoaded ? "Activate Terminal" : "Loading Models..."}
+                  </Button>
+                )}
               </div>
             )}
 
@@ -185,10 +224,31 @@ export function AttendanceTerminal({ roomId, userId, userName }: AttendanceTermi
 
             {status === 'success' && (
               <div className="absolute inset-0 bg-primary/20 backdrop-blur-md flex items-center justify-center">
-                <div className="bg-card p-8 rounded-2xl shadow-2xl text-center scale-up-animation">
+                <div className="bg-card p-8 rounded-2xl shadow-2xl text-center scale-up-animation max-w-sm w-full mx-4">
                   <CheckCircle2 className="h-16 w-16 text-primary mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold text-foreground mb-2">Verified</h3>
-                  <p className="text-muted-foreground">{actionMessage}</p>
+                  <h3 className="text-2xl font-bold text-foreground mb-2">Attendance Recorded</h3>
+                  <p className="text-muted-foreground text-sm mb-4">{actionMessage}</p>
+                  
+                  {todayStatus && (
+                    <div className="space-y-2 pt-4 border-t border-border">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Events:</span>
+                        <div className="flex gap-1">
+                          {todayStatus.events?.map((e: string) => (
+                            <Badge key={e} variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-[10px]">
+                              {e}
+                            </Badge>
+                          )) || <span className="text-foreground">Normal</span>}
+                        </div>
+                      </div>
+                      {todayStatus.fines > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">Fine Applied:</span>
+                          <span className="text-destructive font-bold">₱{todayStatus.fines}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
